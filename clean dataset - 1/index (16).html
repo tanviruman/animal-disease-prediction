@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PetPulse AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #050f1a;
+  --bg-panel:  #0e1f30;
+  --bg-hover:  #162a40;
+  --accent:    #00e5a0;
+  --accent2:   #4de8c2;
+  --accent-glow: rgba(0,229,160,.13);
+  --warn:      #f59e0b;
+  --danger:    #ef4444;
+  --text:      #f0f9ff;
+  --text2:     #7a96b0;
+  --border:    rgba(0,229,160,.14);
+  --r:         12px;
+  --r-sm:      8px;
+  --font:      'Inter', sans-serif;
+  --font-d:    'Space Grotesk', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Nav ── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(13,31,48,.55);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+  z-index: 10;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-d);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+.logo-icon {
+  width: 30px; height: 30px;
+  background: var(--accent-glow);
+  border: 1.5px solid var(--accent);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .88rem;
+}
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .7rem;
+  color: var(--text2);
+  letter-spacing: .02em;
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text2);
+  transition: background .3s, box-shadow .3s;
+}
+.dot.online  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.dot.offline { background: var(--warn); }
+.dot.checking {
+  background: var(--text2);
+  animation: blink 1s ease infinite;
+}
+@keyframes blink { 50% { opacity: .3; } }
+
+/* ── Chat area ── */
+#chat-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  align-self: stretch;
+}
+#chat-wrap::-webkit-scrollbar { width: 4px; }
+#chat-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Messages ── */
+.msg { display: flex; animation: up .22s ease; }
+@keyframes up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.msg.user { justify-content: flex-end; }
+
+.bubble {
+  max-width: 74%;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  line-height: 1.56;
+  font-size: .875rem;
+}
+.msg.bot  .bubble { background: var(--bg-panel); border: 1px solid var(--border); }
+.msg.user .bubble { background: var(--accent); color: #050f1a; font-weight: 500; max-width: 60%; }
+.msg.sys  { justify-content: center; }
+.msg.sys  .bubble {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text2);
+  font-size: .78rem;
+  text-align: center;
+  max-width: 90%;
+  padding: 7px 14px;
+}
+.msg.err .bubble {
+  background: rgba(239,68,68,.09);
+  border: 1px solid rgba(239,68,68,.25);
+  color: #fca5a5;
+}
+
+/* ── Option lists & quick replies ── */
+.opts { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.opt-btn {
+  padding: 8px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: .83rem;
+  text-align: left;
+  transition: border-color .15s, background .15s;
+  font-family: var(--font);
+}
+.opt-btn:hover { border-color: var(--accent); background: var(--bg-hover); }
+.opt-btn:disabled { opacity: .35; cursor: default; pointer-events: none; }
+
+.quick { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.q-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: .82rem;
+  transition: border-color .15s, background .15s;
+  font-family: var(--font);
+}
+.q-btn:hover { border-color: var(--accent); background: var(--bg-hover); }
+
+/* ── Results ── */
+.result-header { margin-bottom: 8px; }
+.result-header h4 { font-family: var(--font-d); font-size: .95rem; color: var(--accent); }
+.result-header p  { font-size: .78rem; color: var(--text2); margin-top: 2px; }
+.urgency {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: .69rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.u-EMERGENCY { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+.u-HIGH      { background: rgba(245,158,11,.1);  color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+.u-MODERATE  { background: var(--accent-glow);   color: var(--accent); border: 1px solid var(--border); }
+.u-LOW       { background: rgba(96,165,250,.09); color: #93c5fd; border: 1px solid rgba(96,165,250,.2); }
+
+.disease-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: .82rem;
+}
+.d-name  { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-track { flex: 2; height: 4px; background: rgba(0,229,160,.1); border-radius: 3px; }
+.d-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; transition: width .7s ease; }
+.d-pct   { font-size: .74rem; color: var(--accent); min-width: 36px; text-align: right; }
+
+.info-block { margin-top: 6px; font-size: .82rem; color: var(--text2); line-height: 1.55; }
+.info-block strong { color: var(--text); }
+
+/* ── Typing indicator ── */
+.typing { display: flex; align-items: center; gap: 4px; padding: 6px 0; }
+.typing span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text2);
+  animation: bounce .6s infinite;
+}
+.typing span:nth-child(2) { animation-delay: .12s; }
+.typing span:nth-child(3) { animation-delay: .24s; }
+@keyframes bounce { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+
+/* ── Input area ── */
+#input-area {
+  padding: 13px 20px;
+  border-top: 1px solid var(--border);
+  background: rgba(5,15,26,.65);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+.iw { display: flex; gap: 8px; max-width: 860px; margin: 0 auto; }
+#msg-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .875rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+#msg-input:focus   { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+#msg-input:disabled { opacity: .35; cursor: not-allowed; }
+#msg-input::placeholder { color: var(--text2); }
+#send-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #050f1a;
+  border: none;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-family: var(--font);
+  font-size: .85rem;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+  white-space: nowrap;
+}
+#send-btn:hover    { background: var(--accent2); }
+#send-btn:disabled { opacity: .3; cursor: not-allowed; background: var(--accent); }
+
+/* ── Footer ── */
+footer {
+  text-align: center;
+  padding: 8px;
+  font-size: .65rem;
+  color: var(--text2);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="logo-icon">🐾</div>PetPulse AI</div>
+  <div class="status-pill">
+    <div class="dot checking" id="dot"></div>
+    <span id="status-txt">Checking…</span>
+  </div>
+</nav>
+
+<div id="chat-wrap"></div>
+
+<div id="input-area">
+  <div class="iw">
+    <input id="msg-input" type="text" placeholder="Type your response…" autocomplete="off" disabled/>
+    <button id="send-btn" disabled>Send</button>
+  </div>
+</div>
+
+<footer>PetPulse AI · CSE 3811 AI Project · UIU · Student ID 011320065</footer>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────
+const API = 'http://localhost:5000/api';
+
+const BREEDS = {
+  Dog: ['Akita','Beagle','Border Collie','Boxer','Bulldog','Chihuahua','Cocker Spaniel','Corgi','Dachshund','Dalmatian','Doberman Pinscher','German Shepherd','Golden Retriever','Husky','Labrador','Labrador Retriever','Pit Bull','Poodle','Rottweiler','Shih Tzu','Siberian Husky','Yorkshire Terrier'],
+  Cat: ['Abyssinian','American Curl','Bengal','Bombay','British Shorthair','Burmese','Devon Rex','Maine Coon','Manx','Persian','Ragdoll','Russian Blue','Scottish Fold','Siamese','Siberian','Sphynx'],
+  Cow: ['Aberdeen Angus','Angus','Ayrshire','Belted Galloway','Brahman','Brown Swiss','Charolais','Dexter','Guernsey','Hereford','Holstein','Jersey','Limousin','Red Angus','Red Poll','Shorthorn','Simmental']
+};
+const SYMPTOMS = ['Appetite Loss','Coughing','Decreased Milk Yield','Dehydration','Diarrhea','Eye Discharge','Fever','Labored Breathing','Lameness','Lethargy','Loss Of Appetite','Nasal Discharge','Skin Lesions','Sneezing','Swelling','Swollen Legs','Vomiting','Weight Loss'];
+const FLAGS    = ['Appetite Loss','Vomiting','Diarrhea','Coughing','Labored Breathing','Lameness','Skin Lesions'];
+
+// ── App state ───────────────────────────────────────────────────
+let S = newState();
+function newState() {
+  const flags = {};
+  FLAGS.forEach(f => flags[f] = 'No');
+  return { step: 'idle', data: {}, symptoms: [], flags };
+}
+
+// ── DOM ─────────────────────────────────────────────────────────
+const chatWrap = document.getElementById('chat-wrap');
+const input    = document.getElementById('msg-input');
+const sendBtn  = document.getElementById('send-btn');
+const dot      = document.getElementById('dot');
+const statusTx = document.getElementById('status-txt');
+
+window.addEventListener('DOMContentLoaded', () => {
+  sendBtn.addEventListener('click', onSend);
+  input.addEventListener('keypress', e => { if (e.key === 'Enter') onSend(); });
+  checkBackend();
+});
+
+// ── Backend health ───────────────────────────────────────────────
+async function checkBackend() {
+  setStatus('checking', 'Checking…');
+  try {
+    const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      setStatus('online', 'Backend online');
+      setInput(true);
+      greetUser();
+      return;
+    }
+  } catch (_) {}
+  setStatus('offline', 'Backend offline');
+  showOffline();
+}
+
+function setStatus(state, label) {
+  dot.className = `dot ${state}`;
+  statusTx.textContent = label;
+}
+function setInput(on) {
+  input.disabled  = !on;
+  sendBtn.disabled = !on;
+  if (on) input.focus();
+}
+
+// ── Message helpers ──────────────────────────────────────────────
+function msg(content, role = 'bot', isHTML = false) {
+  const wrap   = document.createElement('div');
+  wrap.className = `msg ${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  if (isHTML) bubble.innerHTML = content;
+  else bubble.textContent = content;
+  wrap.appendChild(bubble);
+  chatWrap.appendChild(wrap);
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+  return bubble;
+}
+
+function msgOpts(label, options) {
+  const wrap   = document.createElement('div');
+  wrap.className = 'msg bot';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:.78rem;color:var(--text2);margin-bottom:6px;';
+  hint.textContent = label;
+  const list = document.createElement('div');
+  list.className = 'opts';
+  options.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = o;
+    btn.onclick = () => { disableButtons(wrap); pick(o); };
+    list.appendChild(btn);
+  });
+  bubble.appendChild(hint);
+  bubble.appendChild(list);
+  wrap.appendChild(bubble);
+  chatWrap.appendChild(wrap);
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+}
+
+function msgQuick(options) {
+  const wrap   = document.createElement('div');
+  wrap.className = 'msg bot';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  const row = document.createElement('div');
+  row.className = 'quick';
+  options.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'q-btn';
+    btn.textContent = o;
+    btn.onclick = () => { disableButtons(wrap); pick(o); };
+    row.appendChild(btn);
+  });
+  bubble.appendChild(row);
+  wrap.appendChild(bubble);
+  chatWrap.appendChild(wrap);
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+}
+
+function disableButtons(wrap) {
+  wrap.querySelectorAll('button').forEach(b => b.disabled = true);
+}
+
+let typingEl = null;
+function showTyping() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot'; wrap.id = '__typing';
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  b.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  wrap.appendChild(b);
+  chatWrap.appendChild(wrap);
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+  typingEl = wrap;
+}
+function hideTyping() { typingEl?.remove(); typingEl = null; }
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Offline state ────────────────────────────────────────────────
+function showOffline() {
+  msg('⚠️ Backend is offline', 'err');
+  msg('Start the Flask server at http://localhost:5000 and refresh the page to use PetPulse AI.');
+}
+
+// ── Conversation flow ────────────────────────────────────────────
+function greetUser() {
+  msg('🐾 Hi! I\'m PetPulse AI. I\'ll guide you through a quick diagnostic session for your pet.');
+  setTimeout(() => {
+    msg('What type of animal are we diagnosing today?');
+    msgOpts('Select pet type:', Object.keys(BREEDS));
+    S.step = 'pet_type';
+  }, 400);
+}
+
+function onSend() {
+  const text = input.value.trim();
+  if (!text || S.step === 'idle' || S.step === 'diagnosing') return;
+  input.value = '';
+  pick(text);
+}
+
+function pick(text) {
+  msg(text, 'user');
+  route(text);
+}
+
+function route(text) {
+  if (text === 'Start over') { reset(); return; }
+
+  switch (S.step) {
+
+    case 'pet_type':
+      if (!BREEDS[text]) { msg('Please choose Dog, Cat, or Cow.'); return; }
+      S.data['Animal Type'] = text;
+      msg(`A ${text}. What breed?`);
+      setTimeout(() => msgOpts('Select breed:', BREEDS[text]), 300);
+      S.step = 'breed';
+      break;
+
+    case 'breed':
+      S.data['Breed'] = text;
+      msg(`Got it — ${text}. What\'s your pet\'s name?`);
+      input.placeholder = 'Enter pet name…';
+      S.step = 'pet_name';
+      break;
+
+    case 'pet_name':
+      S.data['pet_name'] = text;
+      msg(`Nice to meet ${text}! How old is ${text}? (years)`);
+      input.placeholder = 'Enter age in years…';
+      S.step = 'age';
+      break;
+
+    case 'age': {
+      const age = parseFloat(text);
+      if (isNaN(age) || age < 0) { msg('Please enter a valid age.'); return; }
+      S.data['Age'] = age;
+      msg(`${age} year(s) old. What\'s ${S.data['pet_name']}\'s gender?`);
+      msgOpts('Select gender:', ['Male', 'Female']);
+      S.step = 'gender';
+      break;
+    }
+
+    case 'gender':
+      if (!['Male','Female'].includes(text)) { msg('Please select Male or Female.'); return; }
+      S.data['Gender'] = text;
+      msg('Now let\'s note the symptoms. What is the primary symptom?');
+      setTimeout(() => msgOpts('Primary symptom:', SYMPTOMS), 300);
+      input.placeholder = 'Or select from the list above…';
+      S.step = 'symptom_1';
+      break;
+
+    default:
+      if (S.step.startsWith('symptom_')) routeSymptom(text);
+      else if (S.step.startsWith('flag_'))    routeFlag(text);
+      break;
+  }
+}
+
+function routeSymptom(text) {
+  const num  = parseInt(S.step.split('_')[1]); // 1-4
+  const done = text === 'Skip – no more';
+
+  if (!done) {
+    if (!SYMPTOMS.includes(text)) { msg('Please select a valid symptom from the list.'); return; }
+    S.symptoms.push(text);
+    S.data[`Symptom ${num}`] = text;
+  }
+
+  if (done || num === 4) {
+    setTimeout(startFlags, 300);
+    return;
+  }
+
+  const next = num + 1;
+  msg(`Noted: ${text}. Any more symptoms?`);
+  const opts = [...SYMPTOMS, 'Skip – no more'];
+  setTimeout(() => msgOpts(`Symptom ${next} (optional):`, opts), 300);
+  S.step = `symptom_${next}`;
+}
+
+function startFlags() {
+  msg(`Good. A few yes/no questions about ${S.data['pet_name']}.`);
+  askFlag(0);
+}
+
+function askFlag(i) {
+  if (i >= FLAGS.length) {
+    S.data = { ...S.data, ...S.flags };
+    runDiagnosis();
+    return;
+  }
+  msg(`Does ${S.data['pet_name']} have ${FLAGS[i]}?`);
+  msgQuick(['Yes', 'No']);
+  S.step = `flag_${i}`;
+}
+
+function routeFlag(text) {
+  const i = parseInt(S.step.split('_')[1]);
+  if (!['Yes','No'].includes(text)) { msg('Please answer Yes or No.'); return; }
+  S.flags[FLAGS[i]] = text;
+  askFlag(i + 1);
+}
+
+// ── Diagnosis — backend only ─────────────────────────────────────
+async function runDiagnosis() {
+  S.step = 'diagnosing';
+  setInput(false);
+  showTyping();
+
+  try {
+    const resp = await fetch(`${API}/diagnose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(S.data),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    hideTyping();
+
+    if (!resp.ok) throw new Error(`Server responded with ${resp.status}`);
+
+    const data = await resp.json();
+    showResults(data);
+
+  } catch (err) {
+    hideTyping();
+    msg(`❌ Diagnosis failed: ${err.message}.`, 'err');
+    msg('Check that the backend is running, then try again.');
+    msgQuick(['Start over']);
+    S.step = 'error';
+    setStatus('offline', 'Backend offline');
+  }
+
+  setInput(true);
+}
+
+function showResults(data) {
+  const primary = data.primary_disease || 'Unknown';
+  const top     = data.top_diseases   || [];
+  const prob    = top[0]?.probability  || 0;
+
+  const urgency = prob > 0.6  ? 'EMERGENCY'
+                : prob > 0.35 ? 'HIGH'
+                : prob > 0.18 ? 'MODERATE' : 'LOW';
+
+  // Summary
+  msg(`<div class="result-header">
+        <h4>${S.data['pet_name']} &mdash; ${primary}
+          <span class="urgency u-${urgency}">${urgency}</span>
+        </h4>
+        <p>${S.data['Animal Type']} · ${S.data['Breed']} · ${S.data['Age']} yr · ${S.data['Gender']}</p>
+      </div>`, 'bot', true);
+
+  // Disease ranking
+  if (top.length) {
+    const rows = top.slice(0, 5).map((d, i) => {
+      const pct = Math.round(d.probability * 100);
+      return `<div class="disease-row">
+        <span class="d-name">${i+1}. ${d.disease}</span>
+        <div class="d-track"><div class="d-fill" style="width:${pct}%"></div></div>
+        <span class="d-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+    msg(rows, 'bot', true);
+  }
+
+  // Treatment
+  if (data.treatment_text) {
+    msg(`<div class="info-block"><strong>💊 Treatment</strong><br>${data.treatment_text}</div>`, 'bot', true);
+  }
+
+  // Prevention
+  if (data.prevention_text) {
+    msg(`<div class="info-block"><strong>🛡️ Prevention</strong><br>${data.prevention_text}</div>`, 'bot', true);
+  }
+
+  msg('⚠️ This is AI-assisted screening only — always consult a licensed veterinarian.', 'sys');
+
+  setTimeout(() => {
+    msg('Diagnose another pet?');
+    msgQuick(['Start over']);
+    S.step = 'done';
+  }, 600);
+}
+
+// ── Reset ────────────────────────────────────────────────────────
+function reset() {
+  chatWrap.innerHTML = '';
+  input.placeholder  = 'Type your response…';
+  S = newState();
+  greetUser();
+}
+</script>
+</body>
+</html>
