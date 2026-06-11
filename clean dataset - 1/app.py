@@ -54,9 +54,9 @@ def load_and_train():
 
     # Fill missing values
     for col in df_ml.select_dtypes(include="object").columns:
-        df_ml[col].fillna(df_ml[col].mode()[0], inplace=True)
+        df_ml[col] = df_ml[col].fillna(df_ml[col].mode()[0])
     for col in df_ml.select_dtypes(include="number").columns:
-        df_ml[col].fillna(df_ml[col].median(), inplace=True)
+        df_ml[col] = df_ml[col].fillna(df_ml[col].median())
 
     # Parse "39.2°C" → float
     df_ml["Body Temperature"] = (
